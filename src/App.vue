@@ -70,16 +70,16 @@ export default {
     return {
       height: 0,
       width: 0,
-      x: 192,
-      y: 450,
+      x: 340,
+      y: 380,
       text: 'NOMBRE DEL INVITADO',
-      color: 'white',
+      color: 'black',
 
-      font: 'Tinos-Bold',
-      fontsize: 16,
+      font: 'Poppins',
+      fontsize: 40,
 
       image: '',
-      debug: false,
+      debug: true,
 
       outDir: '',
       isLinux: ''
@@ -107,7 +107,7 @@ export default {
         ctx.drawImage(this.image, 0, 0);
       }
 
-      ctx.font = `${this.fontsize}px ${this.font}`;
+      ctx.font = `bold ${this.fontsize}px ${this.font}`;
       ctx.fillStyle = `${this.color}`;
       ctx.textBaseline = 'top';
       ctx.fillText(this.text, this.x - ctx.measureText(this.text).width / 2, this.y);
@@ -138,18 +138,33 @@ export default {
       window.ipcRenderer.send("getList");
       window.ipcRenderer.on("getListResponse", async (event, response) => {
         let data = response.data;
-        let invitados = data.split(',');
+        let invitados = data.split(',').map(i => i.trim());
+
+        console.log("INVITADOS: ", invitados)
 
         for (const invitado of invitados) {
+          console.log(invitado)
           this.text = invitado;
           this.updateText();
-          this.download();
-          //await new Promise(resolve => setTimeout(resolve, 5000));
+          // await new Promise(resolve => setTimeout(resolve, 300)); // asegurarse de que el texto se actualizó
+          await this.sendDownload(); // espera hasta que el archivo esté listo
         }
 
         this.success("Todas las tarjetas fueron emitidas.");
       });
     },
+    async sendDownload() {
+      return new Promise((resolve) => {
+        window.ipcRenderer.once("downloadComplete", () => resolve());
+
+        const canvas = document.getElementById('canvas');
+        window.ipcRenderer.send("download", {
+          url: canvas.toDataURL(),
+          properties: { directory: this.outDir, name: this.text }
+        });
+      });
+    },
+
     uploadFile() {
       document.getElementById('formFile').click()
     },
@@ -174,9 +189,6 @@ export default {
       });
       return ret;
     },
-
-
-
   },
   watch: {
     width: {
@@ -224,6 +236,7 @@ export default {
 
 <style lang="scss">
 @import url('https://fonts.googleapis.com/css2?family=Alkatra&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 
 * {
   margin: 0;

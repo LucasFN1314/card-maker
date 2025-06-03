@@ -6,7 +6,7 @@ import installExtension, { VUEJS3_DEVTOOLS } from 'electron-devtools-installer'
 const { download } = require("electron-dl");
 const path = require('path');
 const fs = require('fs');
-
+const fsPromises = require('fs').promises;
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const isLinux = true;
 
@@ -26,11 +26,13 @@ async function createWindow() {
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       //nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
       //contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: !true,
+      contextIsolation: !false,
       preload: path.join(__dirname, 'preload.js'),
     }
+
   })
+  console.log("HERE", path.join(__dirname, 'preload.js'));
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
@@ -76,19 +78,18 @@ app.on('ready', async () => {
   let Linux = isLinux;
 
   ipcMain.on("download", async (event, info) => {
-
-    const fs = require('fs');
     try {
       const data = info.url.replace(/^data:image\/\w+;base64,/, "");
       const buf = Buffer.from(data, "base64");
 
       let out = `${process.env.FILE_SAVE_DIRECTORY}${info.properties.name}.png`;
+      console.log(`${info.properties.name}`)
       if(!Linux && info.properties.directory) {
         out = `${info.properties.directory}${info.properties.name}.png`;
       }
 
-      await fs.writeFile(out, buf, () => {
-      });
+      await fsPromises.writeFile(out, buf);
+      event.sender.send("downloadComplete");
     }
     catch (e) { console.log(e); }
 
